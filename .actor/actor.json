@@ -1,0 +1,66 @@
+{
+  "actorSpecification": 1,
+  "name": "stack-overflow-scraper",
+  "title": "Stack Overflow Scraper - Questions & Users",
+  "description": "Scrape Stack Overflow questions and users via the official Stack Exchange API. Get titles, scores, answers, views, tags, bodies, and user profiles. Works across all Stack Exchange sites.",
+  "version": "1.0",
+  "categories": ["DEVELOPER_TOOLS", "BUSINESS"],
+  "dockerfile": "Dockerfile",
+  "input": "../INPUT_SCHEMA.json",
+  "storages": {
+    "dataset": {
+      "actorSpecification": 1,
+      "views": {
+        "questions": {
+          "title": "Questions",
+          "transformation": {
+            "fields": ["questionId", "title", "score", "answerCount", "viewCount", "isAnswered", "tags", "ownerName", "ownerReputation", "createdAt", "lastActivityAt", "link", "site", "scrapedAt"]
+          },
+          "display": {
+            "component": "table",
+            "properties": {
+              "questionId": { "label": "ID", "format": "text" },
+              "title": { "label": "Title", "format": "text" },
+              "score": { "label": "Score", "format": "number" },
+              "answerCount": { "label": "Answers", "format": "number" },
+              "viewCount": { "label": "Views", "format": "number" },
+              "isAnswered": { "label": "Answered", "format": "boolean" },
+              "tags": { "label": "Tags", "format": "array" },
+              "ownerName": { "label": "Author", "format": "text" },
+              "ownerReputation": { "label": "Author Rep", "format": "number" },
+              "createdAt": { "label": "Created", "format": "date" },
+              "lastActivityAt": { "label": "Last Activity", "format": "date" },
+              "link": { "label": "URL", "format": "link" },
+              "site": { "label": "Site", "format": "text" },
+              "scrapedAt": { "label": "Scraped At", "format": "text" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "pricingInfo": {
+    "pricingModel": "PAY_PER_EVENT",
+    "pricingPerEvent": {
+      "actorChargeEvents": {
+        "question-scraped": {
+          "eventTitle": "Question Scraped",
+          "eventDescription": "Charged for each Stack Overflow question extracted and saved to the dataset.",
+          "eventPriceUsd": 0.002
+        },
+        "user-scraped": {
+          "eventTitle": "User Scraped",
+          "eventDescription": "Charged for each Stack Overflow user profile extracted and saved to the dataset.",
+          "eventPriceUsd": 0.002
+        }
+      }
+    }
+  },
+  "defaultRunOptions": {
+    "build": "latest",
+    "memoryMbytes": 512,
+    "timeoutSecs": 3600
+  },
+  "minMemoryMbytes": 256,
+  "maxMemoryMbytes": 2048
+}

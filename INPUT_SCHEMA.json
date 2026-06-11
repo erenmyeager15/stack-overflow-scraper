@@ -1,0 +1,83 @@
+{
+  "title": "Stack Overflow Scraper",
+  "description": "Scrape Stack Overflow questions and users via the official Stack Exchange API. No login required (optional API key for higher limits).",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "searchQueries": {
+      "title": "Search Queries",
+      "description": "Keywords/phrases to search questions (e.g. \"async await\", \"memory leak\").",
+      "type": "array",
+      "editor": "stringList",
+      "prefill": ["async await"],
+      "default": ["async await"]
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "Filter by tags (e.g. \"javascript\", \"python\"). Used with search, or alone to list tagged questions.",
+      "type": "array",
+      "editor": "stringList",
+      "default": []
+    },
+    "questionIds": {
+      "title": "Question IDs",
+      "description": "Specific Stack Overflow question IDs to fetch.",
+      "type": "array",
+      "editor": "stringList",
+      "default": []
+    },
+    "userIds": {
+      "title": "User IDs",
+      "description": "Specific Stack Overflow user IDs to fetch (saved to a separate 'users' dataset).",
+      "type": "array",
+      "editor": "stringList",
+      "default": []
+    },
+    "sort": {
+      "title": "Sort By",
+      "description": "Order questions by votes, activity, creation date, or hot.",
+      "type": "string",
+      "editor": "select",
+      "default": "votes",
+      "enum": ["votes", "activity", "creation", "hot"],
+      "enumTitles": ["Votes", "Activity", "Creation", "Hot"]
+    },
+    "includeBody": {
+      "title": "Include Question Body",
+      "description": "If enabled, the full question body text is included.",
+      "type": "boolean",
+      "editor": "checkbox",
+      "default": false
+    },
+    "maxResults": {
+      "title": "Max Questions",
+      "description": "Maximum number of questions to scrape (across searches/tags).",
+      "type": "integer",
+      "editor": "number",
+      "default": 100,
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "site": {
+      "title": "Stack Exchange Site",
+      "description": "Which Stack Exchange site (e.g. \"stackoverflow\", \"superuser\", \"serverfault\", \"askubuntu\").",
+      "type": "string",
+      "editor": "textfield",
+      "default": "stackoverflow"
+    },
+    "apiKey": {
+      "title": "Stack Apps API Key (optional)",
+      "description": "A Stack Apps API key raises the daily quota from 300 to 10,000 requests. Register at stackapps.com/apps/oauth/register.",
+      "type": "string",
+      "editor": "textfield",
+      "isSecret": true
+    },
+    "proxyConfiguration": {
+      "title": "Proxy Configuration",
+      "description": "Proxy settings. Rotating proxies help multiply the per-IP daily quota.",
+      "type": "object",
+      "editor": "proxy",
+      "default": { "useApifyProxy": true }
+    }
+  }
+}
