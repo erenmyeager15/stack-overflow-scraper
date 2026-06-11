@@ -1,0 +1,11 @@
+{
+  "searchQueries": ["async await"],
+  "tags": ["javascript"],
+  "questionIds": [],
+  "userIds": ["22656"],
+  "sort": "votes",
+  "includeBody": false,
+  "maxResults": 5,
+  "site": "stackoverflow",
+  "proxyConfiguration": { "useApifyProxy": true }
+}
