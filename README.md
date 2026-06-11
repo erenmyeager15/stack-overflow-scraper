@@ -73,6 +73,14 @@ This Actor uses **pay-per-result** pricing:
 
 You are only charged for items actually returned. Apify platform usage is billed separately by Apify.
 
+## How to Scrape Stack Overflow (Step by Step)
+
+1. Click **Try for free** / **Run**.
+2. Enter what you want: add `searchQueries` keywords, `tags`, `questionIds`, or `userIds`.
+3. Choose a `sort` order and set `maxResults` (start small to test), and optionally set `site` for another Stack Exchange community.
+4. Run the Actor (toggle `includeBody` if you need full question text).
+5. Export the results as JSON, CSV, Excel, or HTML, or pull them via the Apify API.
+
 ## Use cases
 
 - **Developer research** - track popular questions, tags, and trends
