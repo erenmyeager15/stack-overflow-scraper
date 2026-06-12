@@ -94,6 +94,12 @@ You are only charged for items actually returned. Apify platform usage is billed
 - Add a free **Stack Apps API key** to lift the daily quota from 300 to 10,000 requests.
 - Set `site` to scrape other Stack Exchange communities (e.g. `superuser`, `askubuntu`).
 
+## Responsible Use
+
+This Actor is intended for lawful collection of publicly available information only. Users are responsible for ensuring their use complies with the source website's terms, robots.txt, applicable privacy laws, including India's DPDP Act, and all local regulations.
+
+Do not use this Actor to collect, store, sell, or misuse personal data without a lawful basis. The Actor author is not responsible for misuse by end users.
+
 ## License
 
 Apache-2.0
