@@ -1,0 +1,14 @@
+{
+  "actorOutputSchemaVersion": 1,
+  "title": "Stack Overflow Scraper Output",
+  "description": "Structured Stack Overflow and Stack Exchange question and user records with scores, answers, views, tags, profile data, links, and timestamps.",
+  "type": "object",
+  "properties": {
+    "results": {
+      "type": "string",
+      "title": "Stack Overflow question and user records",
+      "description": "Clean dataset items containing public Stack Exchange question metadata, tags, answer and view counts, user profile fields, links, and scraped timestamps.",
+      "template": "{{links.apiDefaultDatasetUrl}}/items"
+    }
+  }
+}

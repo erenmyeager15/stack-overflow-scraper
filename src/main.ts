@@ -19,10 +19,10 @@ const {
     proxyConfiguration: proxyInput,
 } = input;
 
-const queries = searchQueries.map((s) => s.trim()).filter(Boolean);
-const tagList = tags.map((t) => t.trim().toLowerCase()).filter(Boolean);
-const qIds = questionIds.map((s) => String(s).trim()).filter(Boolean);
-const uIds = userIds.map((s) => String(s).trim()).filter(Boolean);
+const queries = [...new Set(searchQueries.map((s) => s.trim()).filter(Boolean))];
+const tagList = [...new Set(tags.map((t) => t.trim().toLowerCase()).filter(Boolean))];
+const qIds = [...new Set(questionIds.map((s) => String(s).trim()).filter(Boolean))];
+const uIds = [...new Set(userIds.map((s) => String(s).trim()).filter(Boolean))];
 const siteParam = (site || 'stackoverflow').trim();
 const filterBody = includeBody ? 'withbody' : 'default';
 
@@ -36,6 +36,11 @@ const proxyConfiguration = (proxyInput?.useApifyProxy || proxyInput?.proxyUrls?.
     : undefined;
 
 const BASE = 'https://api.stackexchange.com/2.3';
+let questionCount = 0;
+let userCount = 0;
+let spendingLimitReached = false;
+const seenQuestionIds = new Set<string>();
+
 function withCommon(path: string): string {
     const sep = path.includes('?') ? '&' : '?';
     let url = `${BASE}${path}${sep}site=${encodeURIComponent(siteParam)}`;
@@ -44,8 +49,12 @@ function withCommon(path: string): string {
 }
 
 async function soFetch(path: string): Promise<any> {
+    if (spendingLimitReached) return null;
+
     const url = withCommon(path);
     for (let attempt = 0; attempt < 5; attempt++) {
+        if (spendingLimitReached) return null;
+
         let dispatcher: ProxyAgent | undefined;
         if (proxyConfiguration) {
             const purl = await proxyConfiguration.newUrl();
@@ -75,14 +84,29 @@ async function soFetch(path: string): Promise<any> {
     return null;
 }
 
-let scraped = 0;
-
 async function pushQuestions(items: any[]): Promise<number> {
     let c = 0;
     for (const q of items) {
-        await Actor.pushData(mapQuestion(q, siteParam, includeBody));
-        await Actor.charge({ eventName: 'question-scraped' }).catch(() => null);
-        scraped++; c++;
+        if (spendingLimitReached || questionCount >= maxResults) break;
+
+        const questionKey = String(q?.question_id ?? '');
+        if (!questionKey || seenQuestionIds.has(questionKey)) continue;
+
+        const chargeResult = await Actor.pushData(mapQuestion(q, siteParam, includeBody), 'question-scraped');
+        const recordWasSaved = chargeResult.chargedCount > 0 || !chargeResult.eventChargeLimitReached;
+        if (recordWasSaved) {
+            seenQuestionIds.add(questionKey);
+            questionCount++;
+            c++;
+        }
+
+        if (chargeResult.eventChargeLimitReached) {
+            spendingLimitReached = true;
+            const message = `Stopped at the user's spending limit after ${questionCount} question(s) and ${userCount} user(s).`;
+            await Actor.setStatusMessage(message);
+            log.warning(message);
+            break;
+        }
     }
     return c;
 }
@@ -91,11 +115,13 @@ async function pushQuestions(items: any[]): Promise<number> {
 async function paginate(buildPath: (page: number) => string, label: string): Promise<void> {
     const pageSize = 100;
     let collected = 0;
-    for (let page = 1; collected < maxResults; page++) {
+    for (let page = 1; collected < maxResults && questionCount < maxResults; page++) {
+        if (spendingLimitReached) break;
+
         const data = await soFetch(buildPath(page));
         const items: any[] = data?.items ?? [];
         if (items.length === 0) break;
-        const slice = items.slice(0, maxResults - collected);
+        const slice = items.slice(0, maxResults - questionCount);
         collected += await pushQuestions(slice);
         log.info(`${label}: ${collected}/${maxResults} questions (page ${page})`);
         if (!data?.has_more || items.length < pageSize) break;
@@ -104,6 +130,8 @@ async function paginate(buildPath: (page: number) => string, label: string): Pro
 
 // Search queries
 for (const q of queries) {
+    if (spendingLimitReached || questionCount >= maxResults) break;
+
     const tagParam = tagList.length ? `&tagged=${encodeURIComponent(tagList.join(';'))}` : '';
     await paginate((page) => `/search/advanced?q=${encodeURIComponent(q)}${tagParam}&order=desc&sort=${sort}&pagesize=100&page=${page}&filter=${filterBody}`, `search "${q}"`);
 }
@@ -114,8 +142,12 @@ if (queries.length === 0 && tagList.length > 0) {
 }
 
 // Specific question IDs (batched up to 100)
-for (let i = 0; i < qIds.length; i += 100) {
-    const batch = qIds.slice(i, i + 100);
+for (let i = 0; i < qIds.length;) {
+    if (spendingLimitReached || questionCount >= maxResults) break;
+
+    const batchSize = Math.min(100, maxResults - questionCount, qIds.length - i);
+    const batch = qIds.slice(i, i + batchSize);
+    i += batchSize;
     const data = await soFetch(`/questions/${batch.join(';')}?order=desc&sort=${sort}&pagesize=100&filter=${filterBody}`);
     if (data?.items) {
         await pushQuestions(data.items);
@@ -123,21 +155,35 @@ for (let i = 0; i < qIds.length; i += 100) {
     }
 }
 
-// Users -> separate dataset
+// Users are stored in the default dataset so saving and PPE charging remain atomic.
 if (uIds.length) {
-    const usersDataset = await Actor.openDataset('users').catch(() => null);
     for (let i = 0; i < uIds.length; i += 100) {
+        if (spendingLimitReached) break;
+
         const batch = uIds.slice(i, i + 100);
         const data = await soFetch(`/users/${batch.join(';')}?order=desc&sort=reputation&pagesize=100&filter=default`);
         for (const u of data?.items ?? []) {
+            if (spendingLimitReached) break;
+
             const rec = mapUser(u, siteParam);
-            if (usersDataset) await usersDataset.pushData(rec);
-            else await Actor.pushData(rec);
-            await Actor.charge({ eventName: 'user-scraped' }).catch(() => null);
+            const chargeResult = await Actor.pushData(rec, 'user-scraped');
+            const recordWasSaved = chargeResult.chargedCount > 0 || !chargeResult.eventChargeLimitReached;
+            if (recordWasSaved) userCount++;
+
+            if (chargeResult.eventChargeLimitReached) {
+                spendingLimitReached = true;
+                const message = `Stopped at the user's spending limit after ${questionCount} question(s) and ${userCount} user(s).`;
+                await Actor.setStatusMessage(message);
+                log.warning(message);
+                break;
+            }
         }
         log.info(`Fetched ${(data?.items ?? []).length} user(s)`);
     }
 }
 
-log.info(`Stack Overflow scrape finished. ${scraped} questions scraped.`);
+if (!spendingLimitReached) {
+    await Actor.setStatusMessage(`Finished with ${questionCount} question(s) and ${userCount} user(s).`);
+    log.info(`Stack Overflow scrape finished. ${questionCount} questions and ${userCount} users scraped.`);
+}
 await Actor.exit();

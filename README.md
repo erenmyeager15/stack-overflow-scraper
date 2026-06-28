@@ -10,7 +10,7 @@ Perfect for **developer research, sentiment/trend analysis, tech support tooling
 - ✅ **Questions and users** in one actor
 - ✅ **Search, tag filter, or ID lookup**
 - ✅ **Any Stack Exchange site** - Stack Overflow, Super User, Server Fault, Ask Ubuntu, etc.
-- ✅ **Optional question bodies** and **user profiles** (nested in a separate dataset)
+- ✅ **Optional question bodies** and **user profiles** with separate dataset views
 - ✅ **Optional API key** - 10,000 requests/day vs 300 without
 
 ## Input
@@ -20,13 +20,13 @@ Perfect for **developer research, sentiment/trend analysis, tech support tooling
 | `searchQueries` | `string[]` | Keyword searches | `["async await"]` |
 | `tags` | `string[]` | Tag filters (e.g. `"javascript"`) | `[]` |
 | `questionIds` | `string[]` | Specific question IDs | `[]` |
-| `userIds` | `string[]` | Specific user IDs (separate `users` dataset) | `[]` |
+| `userIds` | `string[]` | Specific user IDs shown in the Users view | `[]` |
 | `sort` | `string` | `votes`, `activity`, `creation`, `hot` | `votes` |
 | `includeBody` | `boolean` | Include full question body | `false` |
 | `maxResults` | `integer` | Max questions | `100` |
 | `site` | `string` | Stack Exchange site | `stackoverflow` |
 | `apiKey` | `string` (secret) | Optional Stack Apps key | — |
-| `proxyConfiguration` | `object` | Proxy settings | Apify Proxy |
+| `proxyConfiguration` | `object` | Optional proxy settings | Disabled |
 
 ### Example input
 
@@ -71,7 +71,7 @@ This Actor uses **pay-per-result** pricing:
 | Per question scraped | **$0.002** ($2 / 1,000 questions) |
 | Per user scraped | **$0.002** ($2 / 1,000 users) |
 
-You are only charged for items actually returned. Apify platform usage is billed separately by Apify.
+Each question or user is saved and charged atomically. Duplicate questions are skipped, one global question cap is enforced across inputs, and later pages or batches stop when the user's spending limit is reached. Proxy usage is disabled by default; an API key is preferred for higher quotas.
 
 ## How to Scrape Stack Overflow (Step by Step)
 
@@ -90,7 +90,7 @@ You are only charged for items actually returned. Apify platform usage is billed
 
 ## Tips
 
-- Questions and users are kept in separate datasets so each stays clean.
+- Questions and users are stored atomically in the default dataset and presented through separate views.
 - Add a free **Stack Apps API key** to lift the daily quota from 300 to 10,000 requests.
 - Set `site` to scrape other Stack Exchange communities (e.g. `superuser`, `askubuntu`).
 

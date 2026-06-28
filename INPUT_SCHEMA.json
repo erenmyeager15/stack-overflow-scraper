@@ -28,7 +28,7 @@
     },
     "userIds": {
       "title": "User IDs",
-      "description": "Specific Stack Overflow user IDs to fetch (saved to a separate 'users' dataset).",
+      "description": "Specific Stack Overflow user IDs to fetch (shown in the Users dataset view).",
       "type": "array",
       "editor": "stringList",
       "default": []
@@ -77,7 +77,7 @@
       "description": "Proxy settings. Rotating proxies help multiply the per-IP daily quota.",
       "type": "object",
       "editor": "proxy",
-      "default": { "useApifyProxy": true }
+      "default": { "useApifyProxy": false }
     }
   }
 }
