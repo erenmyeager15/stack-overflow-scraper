@@ -13,7 +13,7 @@ const {
     userIds = [],
     sort = 'votes',
     includeBody = false,
-    maxResults = 100,
+    maxResults = 10,
     site = 'stackoverflow',
     apiKey = '',
     proxyConfiguration: proxyInput,

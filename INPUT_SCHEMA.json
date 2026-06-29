@@ -51,10 +51,10 @@
     },
     "maxResults": {
       "title": "Max Questions",
-      "description": "Maximum number of questions to scrape (across searches/tags).",
+      "description": "Maximum number of questions to scrape across searches, tags, and question IDs. Start small for testing.",
       "type": "integer",
       "editor": "number",
-      "default": 100,
+      "default": 10,
       "minimum": 1,
       "maximum": 10000
     },

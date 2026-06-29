@@ -1,104 +1,114 @@
-# Stack Overflow Scraper - Questions & Users
+# Stack Overflow Scraper - Questions & Public User Metadata
 
-Scrape **Stack Overflow questions and users** via the official Stack Exchange API - no login required. Get titles, scores, answer/view counts, tags, question bodies, and user profiles (reputation, badges, location). Search by keyword, filter by tag, fetch by ID, and works across all Stack Exchange sites. Export to **JSON, CSV, Excel, or HTML**, or pull via the Apify API.
+Scrape Stack Overflow and Stack Exchange question records through the official Stack Exchange API. The Actor can search questions by keyword, filter by tags, fetch exact question IDs, and optionally fetch public user profile metadata by user ID.
 
-Perfect for **developer research, sentiment/trend analysis, tech support tooling, and recruiting**.
+Use it for developer research, technical trend tracking, support knowledge-base discovery, and public Q&A analysis. No login is required. A Stack Apps API key is optional for higher quota.
 
-## Features
-
-- ✅ **Official Stack Exchange API** - accurate, structured data
-- ✅ **Questions and users** in one actor
-- ✅ **Search, tag filter, or ID lookup**
-- ✅ **Any Stack Exchange site** - Stack Overflow, Super User, Server Fault, Ask Ubuntu, etc.
-- ✅ **Optional question bodies** and **user profiles** with separate dataset views
-- ✅ **Optional API key** - 10,000 requests/day vs 300 without
-
-## Input
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `searchQueries` | `string[]` | Keyword searches | `["async await"]` |
-| `tags` | `string[]` | Tag filters (e.g. `"javascript"`) | `[]` |
-| `questionIds` | `string[]` | Specific question IDs | `[]` |
-| `userIds` | `string[]` | Specific user IDs shown in the Users view | `[]` |
-| `sort` | `string` | `votes`, `activity`, `creation`, `hot` | `votes` |
-| `includeBody` | `boolean` | Include full question body | `false` |
-| `maxResults` | `integer` | Max questions | `100` |
-| `site` | `string` | Stack Exchange site | `stackoverflow` |
-| `apiKey` | `string` (secret) | Optional Stack Apps key | — |
-| `proxyConfiguration` | `object` | Optional proxy settings | Disabled |
-
-### Example input
+## Quick Start
 
 ```json
 {
-  "searchQueries": ["memory leak"],
-  "tags": ["python"],
+  "searchQueries": ["async await"],
+  "tags": ["javascript"],
+  "questionIds": [],
+  "userIds": [],
   "sort": "votes",
-  "includeBody": true,
-  "maxResults": 200
+  "includeBody": false,
+  "maxResults": 5,
+  "site": "stackoverflow",
+  "apiKey": "",
+  "proxyConfiguration": {
+    "useApifyProxy": false
+  }
 }
 ```
 
-## Sample output
+This collects a small set of JavaScript `async await` questions without full bodies or proxy usage.
+
+## Input
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `searchQueries` | string array | `["async await"]` | Keyword searches for questions. |
+| `tags` | string array | `[]` | Stack Exchange tags such as `javascript`, `python`, or `visual-studio-code`. |
+| `questionIds` | string array | `[]` | Exact question IDs to fetch. |
+| `userIds` | string array | `[]` | Exact public user IDs to fetch into the Users view. |
+| `sort` | string | `votes` | One of `votes`, `activity`, `creation`, or `hot`. |
+| `includeBody` | boolean | `false` | Include plain-text question body when enabled. |
+| `maxResults` | integer | `10` | Question cap across all question inputs. |
+| `site` | string | `stackoverflow` | Any Stack Exchange API site, for example `superuser` or `askubuntu`. |
+| `apiKey` | string | empty | Optional Stack Apps key for higher API quota. |
+| `proxyConfiguration` | object | disabled | Usually not needed for small official API runs. |
+
+## Output
+
+The default dataset contains question rows and optional public user rows. Store views separate them into Questions and Users.
+
+Question fields include:
+
+| Field | Description |
+| --- | --- |
+| `questionId`, `title`, `link` | Stack Exchange question identity and URL. |
+| `score`, `answerCount`, `viewCount`, `isAnswered` | Public engagement metrics. |
+| `tags` | Question tags. |
+| `ownerName`, `ownerId`, `ownerReputation` | Public owner metadata returned by the API. |
+| `createdAt`, `lastActivityAt` | Question timestamps. |
+| `body` | Plain-text question body when `includeBody` is enabled. |
+| `site`, `scrapedAt` | Source site and scrape timestamp. |
+
+User rows include public profile fields such as `displayName`, `reputation`, badge counts, optional `location`, optional `websiteUrl`, profile `link`, and `scrapedAt`.
+
+## Verified Sample
+
+An existing successful run returned this Stack Overflow question:
 
 ```json
 {
-  "questionId": 37576685,
-  "title": "Using async/await with a forEach loop",
-  "score": 3351,
-  "answerCount": 35,
-  "viewCount": 2476784,
+  "questionId": 70201407,
+  "title": "Making paragraphs for the outline in VS Code using comments",
+  "score": 3,
+  "answerCount": 4,
+  "viewCount": 2574,
   "isAnswered": true,
-  "acceptedAnswerId": 37576787,
-  "tags": ["javascript", "node.js", "promise", "async-await"],
-  "ownerName": "Saad",
-  "ownerReputation": 54989,
-  "createdAt": "2016-06-01T18:55:58.000Z",
-  "lastActivityAt": "2025-01-28T01:27:13.000Z",
-  "link": "https://stackoverflow.com/questions/37576685/...",
-  "site": "stackoverflow",
-  "scrapedAt": "2026-06-11T10:00:00.000Z"
+  "tags": ["python", "visual-studio-code", "code-organization"],
+  "ownerName": "Oily",
+  "ownerReputation": 729,
+  "createdAt": "2021-12-02T14:38:19.000Z",
+  "lastActivityAt": "2026-06-22T06:54:16.000Z",
+  "site": "stackoverflow"
 }
 ```
 
 ## Pricing
 
-This Actor uses **pay-per-result** pricing:
+Active pay-per-event pricing:
 
 | Event | Price |
-|-------|-------|
-| Per question scraped | **$0.002** ($2 / 1,000 questions) |
-| Per user scraped | **$0.002** ($2 / 1,000 users) |
+| --- | ---: |
+| `question-scraped` | `$0.002` per question |
+| `user-scraped` | `$0.002` per public user row |
+| `apify-actor-start` | `$0.00005` per GB at run start |
 
-Each question or user is saved and charged atomically. Duplicate questions are skipped, one global question cap is enforced across inputs, and later pages or batches stop when the user's spending limit is reached. Proxy usage is disabled by default; an API key is preferred for higher quotas.
+Rows are saved and charged atomically. Duplicate questions are skipped, one global question cap is enforced, and later pages or batches stop when the user's spending limit is reached.
 
-## How to Scrape Stack Overflow (Step by Step)
+## Common Workflows
 
-1. Click **Try for free** / **Run**.
-2. Enter what you want: add `searchQueries` keywords, `tags`, `questionIds`, or `userIds`.
-3. Choose a `sort` order and set `maxResults` (start small to test), and optionally set `site` for another Stack Exchange community.
-4. Run the Actor (toggle `includeBody` if you need full question text).
-5. Export the results as JSON, CSV, Excel, or HTML, or pull them via the Apify API.
+1. Track popular questions for a language, framework, or error pattern.
+2. Build a public Q&A research dataset by tag and keyword.
+3. Fetch exact question IDs for known Stack Overflow discussions.
+4. Use `site` to collect from other Stack Exchange communities.
+5. Export to CSV, Excel, JSON, HTML, or connect through the Apify API.
 
-## Use cases
+## Notes and Limits
 
-- **Developer research** - track popular questions, tags, and trends
-- **Sentiment & topic analysis** - feed titles/bodies into NLP pipelines
-- **Support tooling** - surface top Q&A for a technology
-- **Recruiting** - find high-reputation users in a domain
-
-## Tips
-
-- Questions and users are stored atomically in the default dataset and presented through separate views.
-- Add a free **Stack Apps API key** to lift the daily quota from 300 to 10,000 requests.
-- Set `site` to scrape other Stack Exchange communities (e.g. `superuser`, `askubuntu`).
+- The Actor uses the official Stack Exchange API, so quotas and fields follow that API.
+- A Stack Apps API key can raise request quota; small tests usually do not need it.
+- `includeBody` increases response size. Keep it off unless body text is needed.
+- Public user fields are optional and should be used for analysis, not spam or unsolicited outreach.
 
 ## Responsible Use
 
-This Actor is intended for lawful collection of publicly available information only. Users are responsible for ensuring their use complies with the source website's terms, robots.txt, applicable privacy laws, including India's DPDP Act, and all local regulations.
-
-Do not use this Actor to collect, store, sell, or misuse personal data without a lawful basis. The Actor author is not responsible for misuse by end users.
+Use this Actor for lawful collection of public Stack Exchange data. Respect Stack Exchange terms, API rules, privacy laws, and any downstream restrictions for exported data.
 
 ## License
 

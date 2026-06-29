@@ -8,5 +8,7 @@
   "maxResults": 5,
   "site": "stackoverflow",
   "apiKey": "",
-  "proxyConfiguration": { "useApifyProxy": false }
+  "proxyConfiguration": {
+    "useApifyProxy": false
+  }
 }
