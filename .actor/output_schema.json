@@ -1,14 +1,20 @@
 {
   "actorOutputSchemaVersion": 1,
   "title": "Stack Overflow Scraper Output",
-  "description": "Structured Stack Overflow and Stack Exchange question and user records with scores, answers, views, tags, profile data, links, and timestamps.",
+  "description": "Structured Stack Overflow and Stack Exchange question and user records from the official API, plus machine-readable run diagnostics.",
   "type": "object",
   "properties": {
     "results": {
       "type": "string",
-      "title": "Stack Overflow question and user records",
-      "description": "Clean dataset items containing public Stack Exchange question metadata, tags, answer and view counts, user profile fields, links, and scraped timestamps.",
+      "title": "Stack Exchange question and user records",
+      "description": "Validated public question and user rows with IDs, engagement metrics, tags, profile fields, URLs, and timestamps.",
       "template": "{{links.apiDefaultDatasetUrl}}/items"
+    },
+    "runStatus": {
+      "type": "string",
+      "title": "Run diagnostics",
+      "description": "Outcome, saved counts, source progress, deduplication, API request and backoff counts, quota state, stop reason, and sanitized failure details.",
+      "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/RUN_STATUS"
     }
   }
 }

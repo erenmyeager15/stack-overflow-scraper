@@ -1,64 +1,163 @@
-import type { QuestionRecord, UserRecord } from './types.js';
+import type { QuestionRecord, StackExchangeRecord, UserRecord } from './types.js';
 
-const n = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
-const iso = (v: unknown): string | null => (typeof v === 'number' && v > 0 ? new Date(v * 1000).toISOString() : null);
-
-export function decodeEntities(s: unknown): string | null {
-    if (typeof s !== 'string' || !s) return null;
-    return s
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(parseInt(d, 10)))
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&')
-        .trim() || null;
+export function decodeEntities(value: unknown): string | null {
+    if (typeof value !== 'string' || !value) return null;
+    const decoded = value
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;|&apos;/gi, "'")
+        .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => safeCodePoint(parseInt(hex, 16)))
+        .replace(/&#(\d+);/g, (_, decimal: string) => safeCodePoint(parseInt(decimal, 10)))
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&amp;/gi, '&')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return decoded || null;
 }
 
-function stripHtml(s: unknown): string | null {
-    if (typeof s !== 'string' || !s) return null;
-    const out = s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    return decodeEntities(out);
-}
-
-export function mapQuestion(q: any, site: string, includeBody: boolean): QuestionRecord {
+export function mapQuestion(value: unknown, site: string, includeBody: boolean, scrapedAt = new Date().toISOString()): QuestionRecord {
+    const question = asObject(value) ?? {};
+    const owner = asObject(question.owner);
     return {
-        questionId: n(q.question_id),
-        title: decodeEntities(q.title),
-        score: n(q.score),
-        answerCount: n(q.answer_count),
-        viewCount: n(q.view_count),
-        isAnswered: !!q.is_answered,
-        acceptedAnswerId: n(q.accepted_answer_id),
-        tags: Array.isArray(q.tags) ? q.tags : [],
-        ownerName: decodeEntities(q.owner?.display_name),
-        ownerId: n(q.owner?.user_id),
-        ownerReputation: n(q.owner?.reputation),
-        createdAt: iso(q.creation_date),
-        lastActivityAt: iso(q.last_activity_date),
-        link: q.link ?? null,
-        body: includeBody ? stripHtml(q.body) : null,
+        entityType: 'question',
+        questionId: numberValue(question.question_id),
+        title: decodeEntities(question.title),
+        score: numberValue(question.score),
+        answerCount: numberValue(question.answer_count),
+        viewCount: numberValue(question.view_count),
+        isAnswered: question.is_answered === true,
+        acceptedAnswerId: numberValue(question.accepted_answer_id),
+        tags: stringValues(question.tags),
+        ownerName: decodeEntities(owner?.display_name),
+        ownerId: numberValue(owner?.user_id),
+        ownerReputation: numberValue(owner?.reputation),
+        createdAt: unixSecondsToIso(question.creation_date),
+        lastActivityAt: unixSecondsToIso(question.last_activity_date),
+        link: urlValue(question.link),
+        body: includeBody ? stripHtml(question.body) : null,
         site,
-        scrapedAt: new Date().toISOString(),
+        scrapedAt,
     };
 }
 
-export function mapUser(u: any, site: string): UserRecord {
+export function mapUser(value: unknown, site: string, scrapedAt = new Date().toISOString()): UserRecord {
+    const user = asObject(value) ?? {};
+    const badges = asObject(user.badge_counts);
     return {
-        userId: n(u.user_id),
-        displayName: decodeEntities(u.display_name),
-        reputation: n(u.reputation),
-        location: decodeEntities(u.location),
-        websiteUrl: u.website_url || null,
-        aboutMe: stripHtml(u.about_me),
-        badgeGold: n(u.badge_counts?.gold),
-        badgeSilver: n(u.badge_counts?.silver),
-        badgeBronze: n(u.badge_counts?.bronze),
-        answerCount: n(u.answer_count),
-        questionCount: n(u.question_count),
-        creationDate: iso(u.creation_date),
-        link: u.link ?? null,
+        entityType: 'user',
+        userId: numberValue(user.user_id),
+        displayName: decodeEntities(user.display_name),
+        reputation: numberValue(user.reputation),
+        location: decodeEntities(user.location),
+        websiteUrl: urlValue(user.website_url),
+        aboutMe: stripHtml(user.about_me),
+        badgeGold: numberValue(badges?.gold),
+        badgeSilver: numberValue(badges?.silver),
+        badgeBronze: numberValue(badges?.bronze),
+        answerCount: numberValue(user.answer_count),
+        questionCount: numberValue(user.question_count),
+        creationDate: unixSecondsToIso(user.creation_date),
+        link: urlValue(user.link),
         site,
-        scrapedAt: new Date().toISOString(),
+        scrapedAt,
     };
+}
+
+export function validateStackExchangeRecord(record: StackExchangeRecord): string[] {
+    const errors: string[] = [];
+    if (!validIso(record.scrapedAt)) errors.push('scrapedAt must be an ISO timestamp.');
+    if (!record.site || record.site.length > 64) errors.push('site is missing or invalid.');
+
+    if (record.entityType === 'question') {
+        if (!positiveInteger(record.questionId)) errors.push('questionId must be a positive integer.');
+        if (!record.title) errors.push('title is required.');
+        if (!validUrl(record.link)) errors.push('link must be an HTTP(S) URL.');
+        if (!nonNegativeOrNull(record.answerCount)) errors.push('answerCount must be non-negative.');
+        if (!nonNegativeOrNull(record.viewCount)) errors.push('viewCount must be non-negative.');
+        if (!nonNegativeOrNull(record.ownerReputation)) errors.push('ownerReputation must be non-negative.');
+        if (!record.tags.every((tag) => typeof tag === 'string' && tag.length > 0)) errors.push('tags must contain non-empty strings.');
+    } else {
+        if (!positiveInteger(record.userId)) errors.push('userId must be a positive integer.');
+        if (!record.displayName) errors.push('displayName is required.');
+        if (!validUrl(record.link)) errors.push('link must be an HTTP(S) URL.');
+        for (const [field, value] of [
+            ['reputation', record.reputation],
+            ['badgeGold', record.badgeGold],
+            ['badgeSilver', record.badgeSilver],
+            ['badgeBronze', record.badgeBronze],
+            ['answerCount', record.answerCount],
+            ['questionCount', record.questionCount],
+        ] as const) {
+            if (!nonNegativeOrNull(value)) errors.push(`${field} must be non-negative.`);
+        }
+    }
+    return errors;
+}
+
+function stripHtml(value: unknown): string | null {
+    if (typeof value !== 'string' || !value) return null;
+    const withoutMarkup = value
+        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ');
+    return decodeEntities(withoutMarkup);
+}
+
+function stringValues(value: unknown): string[] {
+    if (!Array.isArray(value)) return [];
+    return value
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
+function numberValue(value: unknown): number | null {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function unixSecondsToIso(value: unknown): string | null {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return null;
+    const timestamp = new Date(value * 1_000);
+    return Number.isNaN(timestamp.getTime()) ? null : timestamp.toISOString();
+}
+
+function urlValue(value: unknown): string | null {
+    return typeof value === 'string' && validUrl(value) ? value : null;
+}
+
+function validUrl(value: unknown): boolean {
+    if (typeof value !== 'string') return false;
+    try {
+        const url = new URL(value);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
+function validIso(value: string): boolean {
+    return !Number.isNaN(Date.parse(value));
+}
+
+function positiveInteger(value: number | null): boolean {
+    return Number.isInteger(value) && (value as number) > 0;
+}
+
+function nonNegativeOrNull(value: number | null): boolean {
+    return value === null || (Number.isFinite(value) && value >= 0);
+}
+
+function safeCodePoint(value: number): string {
+    try {
+        return Number.isInteger(value) && value >= 0 && value <= 0x10ffff ? String.fromCodePoint(value) : '';
+    } catch {
+        return '';
+    }
+}
+
+function asObject(value: unknown): Record<string, unknown> | null {
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
+        ? value as Record<string, unknown>
+        : null;
 }

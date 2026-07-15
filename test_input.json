@@ -5,7 +5,7 @@
   "userIds": [],
   "sort": "votes",
   "includeBody": false,
-  "maxResults": 5,
+  "maxResults": 1,
   "site": "stackoverflow",
   "apiKey": "",
   "proxyConfiguration": { "useApifyProxy": false }

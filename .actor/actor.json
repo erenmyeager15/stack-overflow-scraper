@@ -10,7 +10,7 @@
   "readme": "../README.md",
   "output": "./output_schema.json",
   "exampleRunInput": {
-    "body": "{\"searchQueries\":[\"async await\"],\"tags\":[\"javascript\"],\"questionIds\":[],\"userIds\":[],\"sort\":\"votes\",\"includeBody\":false,\"maxResults\":5,\"site\":\"stackoverflow\",\"apiKey\":\"\",\"proxyConfiguration\":{\"useApifyProxy\":false}}",
+    "body": "{\"searchQueries\":[\"async await\"],\"tags\":[\"javascript\"],\"questionIds\":[],\"userIds\":[],\"sort\":\"votes\",\"includeBody\":false,\"maxResults\":1,\"site\":\"stackoverflow\",\"apiKey\":\"\",\"proxyConfiguration\":{\"useApifyProxy\":false}}",
     "contentType": "application/json; charset=utf-8"
   },
   "storages": {
@@ -20,11 +20,12 @@
         "questions": {
           "title": "Questions",
           "transformation": {
-            "fields": ["questionId", "title", "score", "answerCount", "viewCount", "isAnswered", "tags", "ownerName", "ownerReputation", "createdAt", "lastActivityAt", "link", "site", "scrapedAt"]
+            "fields": ["entityType", "questionId", "title", "score", "answerCount", "viewCount", "isAnswered", "tags", "ownerName", "ownerReputation", "createdAt", "lastActivityAt", "link", "site", "scrapedAt"]
           },
           "display": {
             "component": "table",
             "properties": {
+              "entityType": { "label": "Type", "format": "text" },
               "questionId": { "label": "ID", "format": "text" },
               "title": { "label": "Title", "format": "text" },
               "score": { "label": "Score", "format": "number" },
@@ -45,11 +46,12 @@
         "users": {
           "title": "Users",
           "transformation": {
-            "fields": ["userId", "displayName", "reputation", "location", "websiteUrl", "badgeGold", "badgeSilver", "badgeBronze", "answerCount", "questionCount", "creationDate", "link", "site", "scrapedAt"]
+            "fields": ["entityType", "userId", "displayName", "reputation", "location", "websiteUrl", "badgeGold", "badgeSilver", "badgeBronze", "answerCount", "questionCount", "creationDate", "link", "site", "scrapedAt"]
           },
           "display": {
             "component": "table",
             "properties": {
+              "entityType": { "label": "Type", "format": "text" },
               "userId": { "label": "User ID", "format": "text" },
               "displayName": { "label": "Name", "format": "text" },
               "reputation": { "label": "Reputation", "format": "number" },

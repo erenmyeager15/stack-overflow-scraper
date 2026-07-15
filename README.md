@@ -14,7 +14,7 @@ Use it for developer research, technical trend tracking, support knowledge-base 
   "userIds": [],
   "sort": "votes",
   "includeBody": false,
-  "maxResults": 5,
+  "maxResults": 1,
   "site": "stackoverflow",
   "apiKey": "",
   "proxyConfiguration": {
@@ -23,7 +23,7 @@ Use it for developer research, technical trend tracking, support knowledge-base 
 }
 ```
 
-This collects a small set of JavaScript `async await` questions without full bodies or proxy usage.
+This collects one JavaScript `async await` question without full bodies or proxy usage.
 
 ## Input
 
@@ -33,9 +33,9 @@ This collects a small set of JavaScript `async await` questions without full bod
 | `tags` | string array | `[]` | Stack Exchange tags such as `javascript`, `python`, or `visual-studio-code`. |
 | `questionIds` | string array | `[]` | Exact question IDs to fetch. |
 | `userIds` | string array | `[]` | Exact public user IDs to fetch into the Users view. |
-| `sort` | string | `votes` | One of `votes`, `activity`, `creation`, or `hot`. |
+| `sort` | string | `votes` | `votes`, `activity`, or `creation`; `hot` is tag-only and `relevance` is search-only. |
 | `includeBody` | boolean | `false` | Include plain-text question body when enabled. |
-| `maxResults` | integer | `10` | Question cap across all question inputs. |
+| `maxResults` | integer | `1` | Question cap across all question inputs; exact user IDs are separate. |
 | `site` | string | `stackoverflow` | Any Stack Exchange API site, for example `superuser` or `askubuntu`. |
 | `apiKey` | string | empty | Optional Stack Apps key for higher API quota. |
 | `proxyConfiguration` | object | disabled | Usually not needed for small official API runs. |
@@ -57,6 +57,10 @@ Question fields include:
 | `site`, `scrapedAt` | Source site and scrape timestamp. |
 
 User rows include public profile fields such as `displayName`, `reputation`, badge counts, optional `location`, optional `websiteUrl`, profile `link`, and `scrapedAt`.
+
+Every row also contains `entityType` (`question` or `user`). The Output tab links to a
+`RUN_STATUS` record with saved counts, source progress, duplicate counts, API backoff,
+remaining quota, stop reason, and sanitized failure details.
 
 ## Verified Sample
 
@@ -102,8 +106,11 @@ Rows are saved and charged atomically. Duplicate questions are skipped, one glob
 ## Notes and Limits
 
 - The Actor uses the official Stack Exchange API, so quotas and fields follow that API.
-- A Stack Apps API key can raise request quota; small tests usually do not need it.
+- Without a key, the official API normally reports a 300-request daily quota per source IP. A Stack Apps key can raise it to 10,000 requests.
+- Official `backoff` instructions are honored before another request, and quota exhaustion is reported separately from an API failure.
+- `hot` is valid only for tag-only `/questions` runs. Use `relevance` only for keyword searches without exact question IDs.
 - `includeBody` increases response size. Keep it off unless body text is needed.
+- Valid searches with no matches finish successfully as `empty`; invalid input and upstream/API failures fail visibly.
 - Public user fields are optional and should be used for analysis, not spam or unsolicited outreach.
 
 ## Responsible Use

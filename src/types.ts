@@ -1,9 +1,11 @@
+export type QuestionSort = 'votes' | 'activity' | 'creation' | 'hot' | 'relevance';
+
 export interface ActorInput {
     searchQueries?: string[];
     tags?: string[];
-    questionIds?: string[];
-    userIds?: string[];
-    sort?: 'votes' | 'activity' | 'creation' | 'hot';
+    questionIds?: Array<string | number>;
+    userIds?: Array<string | number>;
+    sort?: QuestionSort;
     includeBody?: boolean;
     maxResults?: number;
     site?: string;
@@ -16,6 +18,7 @@ export interface ActorInput {
 }
 
 export interface QuestionRecord {
+    entityType: 'question';
     questionId: number | null;
     title: string | null;
     score: number | null;
@@ -36,6 +39,7 @@ export interface QuestionRecord {
 }
 
 export interface UserRecord {
+    entityType: 'user';
     userId: number | null;
     displayName: string | null;
     reputation: number | null;
@@ -51,4 +55,36 @@ export interface UserRecord {
     link: string | null;
     site: string;
     scrapedAt: string;
+}
+
+export type StackExchangeRecord = QuestionRecord | UserRecord;
+
+export interface ChargeResult {
+    chargedCount: number;
+    eventChargeLimitReached: boolean;
+}
+
+export interface StackExchangeRunStatus {
+    status: 'running' | 'succeeded' | 'empty' | 'stopped_spending_limit' | 'stopped_quota' | 'stopped_runtime_limit' | 'failed';
+    source: 'stack_exchange_api';
+    recordsSaved: number;
+    questionsSaved: number;
+    usersSaved: number;
+    searchQueriesRequested: number;
+    searchQueriesCompleted: number;
+    searchQueriesSkipped: number;
+    tagListingRequested: boolean;
+    tagListingCompleted: boolean;
+    questionIdsRequested: number;
+    questionIdsSkipped: number;
+    userIdsRequested: number;
+    userIdsSkipped: number;
+    duplicateQuestionsSkipped: number;
+    duplicateUsersSkipped: number;
+    apiRequests: number;
+    apiBackoffSeconds: number;
+    quotaMax: number | null;
+    quotaRemaining: number | null;
+    durationMs: number;
+    failureMessage?: string;
 }

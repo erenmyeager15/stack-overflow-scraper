@@ -1,80 +1,106 @@
 {
   "title": "Stack Overflow Scraper",
-  "description": "Scrape Stack Overflow questions and users via the official Stack Exchange API. No login required (optional API key for higher limits).",
+  "description": "Search public Stack Overflow and Stack Exchange questions or fetch exact question and user IDs through the official Stack Exchange API.",
   "type": "object",
   "schemaVersion": 1,
+  "additionalProperties": false,
   "properties": {
     "searchQueries": {
       "title": "Search Queries",
-      "description": "Keywords/phrases to search questions (e.g. \"async await\", \"memory leak\").",
+      "description": "Keywords or phrases for advanced question search, such as \"async await\" or \"memory leak\".",
       "type": "array",
       "editor": "stringList",
       "prefill": ["async await"],
-      "default": ["async await"]
+      "default": ["async await"],
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      }
     },
     "tags": {
       "title": "Tags",
-      "description": "Filter by tags (e.g. \"javascript\", \"python\"). Used with search, or alone to list tagged questions.",
+      "description": "Up to five tags. With search queries they filter search; without a query they list questions matching all tags.",
       "type": "array",
       "editor": "stringList",
-      "default": []
+      "default": [],
+      "maxItems": 5,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 35
+      }
     },
     "questionIds": {
       "title": "Question IDs",
-      "description": "Specific Stack Overflow question IDs to fetch.",
+      "description": "Exact positive Stack Exchange question IDs to fetch, processed after searches and subject to Max Questions.",
       "type": "array",
       "editor": "stringList",
-      "default": []
+      "default": [],
+      "maxItems": 10000,
+      "items": {
+        "type": "string",
+        "pattern": "^[1-9][0-9]{0,15}$"
+      }
     },
     "userIds": {
       "title": "User IDs",
-      "description": "Specific Stack Overflow user IDs to fetch (shown in the Users dataset view).",
+      "description": "Exact positive public user IDs to fetch. User rows are separate from the Max Questions cap.",
       "type": "array",
       "editor": "stringList",
-      "default": []
+      "default": [],
+      "maxItems": 1000,
+      "items": {
+        "type": "string",
+        "pattern": "^[1-9][0-9]{0,15}$"
+      }
     },
     "sort": {
       "title": "Sort By",
-      "description": "Order questions by votes, activity, creation date, or hot.",
+      "description": "Votes, activity, and creation work broadly. Hot is tag-only; relevance is keyword-search-only and cannot be combined with exact question IDs.",
       "type": "string",
       "editor": "select",
       "default": "votes",
-      "enum": ["votes", "activity", "creation", "hot"],
-      "enumTitles": ["Votes", "Activity", "Creation", "Hot"]
+      "enum": ["votes", "activity", "creation", "hot", "relevance"],
+      "enumTitles": ["Votes", "Activity", "Creation", "Hot (tag-only)", "Relevance (search-only)"]
     },
     "includeBody": {
       "title": "Include Question Body",
-      "description": "If enabled, the full question body text is included.",
+      "description": "Include the question body converted from API HTML to plain text.",
       "type": "boolean",
       "editor": "checkbox",
       "default": false
     },
     "maxResults": {
       "title": "Max Questions",
-      "description": "Maximum number of questions to scrape across searches, tags, and question IDs. Start small for testing.",
+      "description": "Maximum unique question rows across searches, tags, and exact IDs. Use 1-5 for a quick test.",
       "type": "integer",
       "editor": "number",
-      "default": 10,
+      "default": 1,
       "minimum": 1,
       "maximum": 10000
     },
     "site": {
       "title": "Stack Exchange Site",
-      "description": "Which Stack Exchange site (e.g. \"stackoverflow\", \"superuser\", \"serverfault\", \"askubuntu\").",
+      "description": "Official API site parameter, such as stackoverflow, superuser, serverfault, askubuntu, or math.",
       "type": "string",
       "editor": "textfield",
-      "default": "stackoverflow"
+      "default": "stackoverflow",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9.-]{0,62}[A-Za-z0-9])?$"
     },
     "apiKey": {
       "title": "Stack Apps API Key (optional)",
-      "description": "A Stack Apps API key raises the daily quota from 300 to 10,000 requests. Register at stackapps.com/apps/oauth/register.",
+      "description": "Optional Stack Apps key for a higher daily request quota. The no-key quota is normally 300 requests per source IP per day.",
       "type": "string",
       "editor": "textfield",
       "isSecret": true
     },
     "proxyConfiguration": {
       "title": "Proxy Configuration",
-      "description": "Proxy settings. Rotating proxies help multiply the per-IP daily quota.",
+      "description": "Usually keep disabled for the official API. Use an API key, rather than proxy rotation, when a higher quota is needed.",
       "type": "object",
       "editor": "proxy",
       "default": { "useApifyProxy": false }
