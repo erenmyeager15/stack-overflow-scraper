@@ -89,11 +89,13 @@ Active pay-per-event pricing:
 
 | Event | Price |
 | --- | ---: |
-| `question-scraped` | `$0.002` per question |
-| `user-scraped` | `$0.002` per public user row |
+| `question-scraped` | `$0.0015` per question |
+| `user-scraped` | `$0.0015` per public user row |
 | `apify-actor-start` | `$0.00005` per GB at run start |
 
 Rows are saved and charged atomically. Duplicate questions are skipped, one global question cap is enforced, and later pages or batches stop when the user's spending limit is reached.
+
+That is `$1.50 per 1,000` successfully saved questions or public user rows, plus the small run-start event.
 
 ## Common Workflows
 
@@ -116,6 +118,8 @@ Rows are saved and charged atomically. Duplicate questions are skipped, one glob
 ## Responsible Use
 
 Use this Actor for lawful collection of public Stack Exchange data. Respect Stack Exchange terms, API rules, privacy laws, and any downstream restrictions for exported data.
+
+Stack Exchange user-contributed content is licensed under Creative Commons Attribution-ShareAlike. If you display or redistribute exported post content, preserve the source link and provide the attribution required by the applicable license version. See [Stack Overflow licensing](https://stackoverflow.com/help/licensing).
 
 ## License
 

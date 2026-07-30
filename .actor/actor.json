@@ -87,13 +87,13 @@
           "eventDescription": "Charged for each Stack Overflow question extracted and saved to the dataset.",
           "isOneTimeEvent": false,
           "isPrimaryEvent": true,
-          "eventPriceUsd": 0.002
+          "eventPriceUsd": 0.0015
         },
         "user-scraped": {
           "eventTitle": "User Scraped",
           "eventDescription": "Charged for each Stack Overflow user profile extracted and saved to the dataset.",
           "isOneTimeEvent": false,
-          "eventPriceUsd": 0.002
+          "eventPriceUsd": 0.0015
         }
       }
     }
